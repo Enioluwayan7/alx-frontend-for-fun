@@ -6,6 +6,7 @@ Usage: ./markdown2html.py <input_file.md> <output_file.html>
 
 import sys
 import os
+import re
 
 def convert_markdown_to_html(input_file, output_file):
     """Convert a Markdown file to HTML and write to an output file."""
@@ -103,9 +104,24 @@ def parse_list_item(line, ordered=False):
 def parse_paragraph_line(line):
     """
     Convert a single line of a paragraph to HTML.
-    Adds <br /> tags for multi-line paragraphs.
+    Adds <br /> tags for multi-line paragraphs and handles bold/italic formatting.
     """
+    line = apply_bold_and_italic(line)  # Convert bold and italic Markdown to HTML
     return f"    {line}<br />" if line.endswith('\n') else f"    {line}"
+
+def apply_bold_and_italic(text):
+    """
+    Convert Markdown bold (**text**) and italic (__text__) to HTML.
+    **text** -> <b>text</b>
+    __text__ -> <em>text</em>
+    """
+    # Replace **text** with <b>text</b>
+    text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text)
+
+    # Replace __text__ with <em>text</em>
+    text = re.sub(r'__(.*?)__', r'<em>\1</em>', text)
+
+    return text
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
