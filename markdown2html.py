@@ -16,42 +16,61 @@ def convert_markdown_to_html(input_file, output_file):
         html_lines = []
         inside_unordered_list = False  # Flag to check if we are inside an unordered list
         inside_ordered_list = False    # Flag to check if we are inside an ordered list
+        inside_paragraph = False       # Flag to check if we are inside a paragraph
 
         for line in markdown_lines:
+            stripped_line = line.strip()
+
             # Check for unordered list items
-            if line.startswith("- "):
+            if stripped_line.startswith("- "):
+                if inside_paragraph:
+                    html_lines.append("</p>")
+                    inside_paragraph = False
                 if inside_ordered_list:
-                    html_lines.append("</ol>")  # Close any open ordered list
+                    html_lines.append("</ol>")
                     inside_ordered_list = False
                 if not inside_unordered_list:
-                    html_lines.append("<ul>")  # Start an unordered list
+                    html_lines.append("<ul>")
                     inside_unordered_list = True
-                html_lines.append(parse_list_item(line))
-            
+                html_lines.append(parse_list_item(stripped_line))
+
             # Check for ordered list items
-            elif line.startswith("* "):
+            elif stripped_line.startswith("* "):
+                if inside_paragraph:
+                    html_lines.append("</p>")
+                    inside_paragraph = False
                 if inside_unordered_list:
-                    html_lines.append("</ul>")  # Close any open unordered list
+                    html_lines.append("</ul>")
                     inside_unordered_list = False
                 if not inside_ordered_list:
-                    html_lines.append("<ol>")  # Start an ordered list
+                    html_lines.append("<ol>")
                     inside_ordered_list = True
-                html_lines.append(parse_list_item(line, ordered=True))
+                html_lines.append(parse_list_item(stripped_line, ordered=True))
 
-            else:
+            # Handle paragraph content
+            elif stripped_line:
                 if inside_unordered_list:
-                    html_lines.append("</ul>")  # Close any open unordered list
+                    html_lines.append("</ul>")
                     inside_unordered_list = False
                 if inside_ordered_list:
-                    html_lines.append("</ol>")  # Close any open ordered list
+                    html_lines.append("</ol>")
                     inside_ordered_list = False
-                html_lines.append(parse_markdown_line(line))  # Parse other Markdown syntax
+                if not inside_paragraph:
+                    html_lines.append("<p>")
+                    inside_paragraph = True
+                html_lines.append(parse_paragraph_line(stripped_line))
+            else:
+                if inside_paragraph:
+                    html_lines.append("</p>")
+                    inside_paragraph = False
 
-        # Close any remaining open lists
+        # Close any remaining open elements
         if inside_unordered_list:
             html_lines.append("</ul>")
         if inside_ordered_list:
             html_lines.append("</ol>")
+        if inside_paragraph:
+            html_lines.append("</p>")
 
         with open(output_file, 'w', encoding='utf-8') as html_file:
             html_file.write('\n'.join(html_lines))
@@ -80,6 +99,13 @@ def parse_list_item(line, ordered=False):
     """
     list_item_text = line[2:].strip()  # Remove the "- " or "* " and strip whitespace
     return f"    <li>{list_item_text}</li>"
+
+def parse_paragraph_line(line):
+    """
+    Convert a single line of a paragraph to HTML.
+    Adds <br /> tags for multi-line paragraphs.
+    """
+    return f"    {line}<br />" if line.endswith('\n') else f"    {line}"
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
