@@ -14,8 +14,24 @@ def convert_markdown_to_html(input_file, output_file):
             markdown_lines = md_file.readlines()
 
         html_lines = []
+        inside_list = False  # Flag to check if we are inside a list
+
         for line in markdown_lines:
-            html_lines.append(parse_markdown_line(line))
+            # Check for list items
+            if line.startswith("- "):
+                if not inside_list:
+                    html_lines.append("<ul>")  # Start the unordered list
+                    inside_list = True
+                html_lines.append(parse_list_item(line))
+            else:
+                if inside_list:
+                    html_lines.append("</ul>")  # Close the unordered list
+                    inside_list = False
+                html_lines.append(parse_markdown_line(line))  # Parse other Markdown syntax
+
+        # If the document ends while still inside a list, close the list
+        if inside_list:
+            html_lines.append("</ul>")
 
         with open(output_file, 'w', encoding='utf-8') as html_file:
             html_file.write('\n'.join(html_lines))
@@ -36,6 +52,13 @@ def parse_markdown_line(line):
         return f"<h{heading_level}>{heading_text}</h{heading_level}>"
     else:
         return line.strip()  # For now, return non-heading lines as plain text
+
+def parse_list_item(line):
+    """
+    Convert a single Markdown list item to an HTML <li> element.
+    """
+    list_item_text = line[2:].strip()  # Remove the "- " and strip whitespace
+    return f"    <li>{list_item_text}</li>"
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
