@@ -11,16 +11,31 @@ def convert_markdown_to_html(input_file, output_file):
     """Convert a Markdown file to HTML and write to an output file."""
     try:
         with open(input_file, 'r', encoding='utf-8') as md_file:
-            markdown_content = md_file.read()
+            markdown_lines = md_file.readlines()
 
-        # Basic conversion from Markdown to HTML (can be extended with more features)
-        html_content = markdown_content.replace("# ", "<h1>").replace("\n", "<br>")
+        html_lines = []
+        for line in markdown_lines:
+            html_lines.append(parse_markdown_line(line))
 
         with open(output_file, 'w', encoding='utf-8') as html_file:
-            html_file.write(html_content)
+            html_file.write('\n'.join(html_lines))
+
     except FileNotFoundError:
         print(f"Missing {input_file}", file=sys.stderr)
         sys.exit(1)
+
+def parse_markdown_line(line):
+    """
+    Convert a single line of Markdown to HTML.
+    Supports heading levels from 1 to 6.
+    """
+    heading_level = line.count('#', 0, 6)  # Count leading '#' symbols (max 6)
+    
+    if heading_level > 0 and line.startswith('#' * heading_level + ' '):
+        heading_text = line[heading_level:].strip()
+        return f"<h{heading_level}>{heading_text}</h{heading_level}>"
+    else:
+        return line.strip()  # For now, return non-heading lines as plain text
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
