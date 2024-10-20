@@ -7,6 +7,7 @@ Usage: ./markdown2html.py <input_file.md> <output_file.html>
 import sys
 import os
 import re
+import hashlib
 
 def convert_markdown_to_html(input_file, output_file):
     """Convert a Markdown file to HTML and write to an output file."""
@@ -86,7 +87,7 @@ def parse_markdown_line(line):
     Supports heading levels from 1 to 6.
     """
     heading_level = line.count('#', 0, 6)  # Count leading '#' symbols (max 6)
-    
+
     if heading_level > 0 and line.startswith('#' * heading_level + ' '):
         heading_text = line[heading_level:].strip()
         return f"<h{heading_level}>{heading_text}</h{heading_level}>"
@@ -106,14 +107,16 @@ def parse_paragraph_line(line):
     Convert a single line of a paragraph to HTML.
     Adds <br /> tags for multi-line paragraphs and handles bold/italic formatting.
     """
-    line = apply_bold_and_italic(line)  # Convert bold and italic Markdown to HTML
+    line = apply_custom_syntax(line)  # Convert bold, MD5, and custom syntax to HTML
     return f"    {line}<br />" if line.endswith('\n') else f"    {line}"
 
-def apply_bold_and_italic(text):
+def apply_custom_syntax(text):
     """
-    Convert Markdown bold (**text**) and italic (__text__) to HTML.
-    **text** -> <b>text</b>
-    __text__ -> <em>text</em>
+    Convert custom Markdown syntax to HTML.
+    - **text** -> <b>text</b>
+    - __text__ -> <em>text</em>
+    - [[text]] -> MD5 of text (lowercase)
+    - ((text)) -> Remove all 'c' (case insensitive)
     """
     # Replace **text** with <b>text</b>
     text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text)
@@ -121,7 +124,21 @@ def apply_bold_and_italic(text):
     # Replace __text__ with <em>text</em>
     text = re.sub(r'__(.*?)__', r'<em>\1</em>', text)
 
+    # Replace [[text]] with its MD5 hash (lowercase)
+    text = re.sub(r'\[\[(.*?)\]\]', lambda m: md5_hash(m.group(1)), text)
+
+    # Replace ((text)) with text with all 'c's (case insensitive) removed
+    text = re.sub(r'\(\((.*?)\)\)', lambda m: remove_c(m.group(1)), text)
+
     return text
+
+def md5_hash(text):
+    """Convert the given text to its MD5 hash in lowercase."""
+    return hashlib.md5(text.encode()).hexdigest()
+
+def remove_c(text):
+    """Remove all occurrences of 'c' or 'C' from the given text."""
+    return text.replace('c', '').replace('C', '')
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
