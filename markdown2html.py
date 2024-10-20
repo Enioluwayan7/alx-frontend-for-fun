@@ -14,24 +14,44 @@ def convert_markdown_to_html(input_file, output_file):
             markdown_lines = md_file.readlines()
 
         html_lines = []
-        inside_list = False  # Flag to check if we are inside a list
+        inside_unordered_list = False  # Flag to check if we are inside an unordered list
+        inside_ordered_list = False    # Flag to check if we are inside an ordered list
 
         for line in markdown_lines:
-            # Check for list items
+            # Check for unordered list items
             if line.startswith("- "):
-                if not inside_list:
-                    html_lines.append("<ul>")  # Start the unordered list
-                    inside_list = True
+                if inside_ordered_list:
+                    html_lines.append("</ol>")  # Close any open ordered list
+                    inside_ordered_list = False
+                if not inside_unordered_list:
+                    html_lines.append("<ul>")  # Start an unordered list
+                    inside_unordered_list = True
                 html_lines.append(parse_list_item(line))
+            
+            # Check for ordered list items
+            elif line.startswith("* "):
+                if inside_unordered_list:
+                    html_lines.append("</ul>")  # Close any open unordered list
+                    inside_unordered_list = False
+                if not inside_ordered_list:
+                    html_lines.append("<ol>")  # Start an ordered list
+                    inside_ordered_list = True
+                html_lines.append(parse_list_item(line, ordered=True))
+
             else:
-                if inside_list:
-                    html_lines.append("</ul>")  # Close the unordered list
-                    inside_list = False
+                if inside_unordered_list:
+                    html_lines.append("</ul>")  # Close any open unordered list
+                    inside_unordered_list = False
+                if inside_ordered_list:
+                    html_lines.append("</ol>")  # Close any open ordered list
+                    inside_ordered_list = False
                 html_lines.append(parse_markdown_line(line))  # Parse other Markdown syntax
 
-        # If the document ends while still inside a list, close the list
-        if inside_list:
+        # Close any remaining open lists
+        if inside_unordered_list:
             html_lines.append("</ul>")
+        if inside_ordered_list:
+            html_lines.append("</ol>")
 
         with open(output_file, 'w', encoding='utf-8') as html_file:
             html_file.write('\n'.join(html_lines))
@@ -53,11 +73,12 @@ def parse_markdown_line(line):
     else:
         return line.strip()  # For now, return non-heading lines as plain text
 
-def parse_list_item(line):
+def parse_list_item(line, ordered=False):
     """
     Convert a single Markdown list item to an HTML <li> element.
+    Handles both unordered (- ) and ordered (* ) lists.
     """
-    list_item_text = line[2:].strip()  # Remove the "- " and strip whitespace
+    list_item_text = line[2:].strip()  # Remove the "- " or "* " and strip whitespace
     return f"    <li>{list_item_text}</li>"
 
 if __name__ == "__main__":
