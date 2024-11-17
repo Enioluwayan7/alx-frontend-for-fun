@@ -1,0 +1,37 @@
+/* General styles */
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f5f5f5;
+}
+
+h2 {
+    font-size: 24px;
+    margin: 0;
+}
+
+/* Link styles */
+h2 a {
+    text-decoration: none; /* Remove the default underline */
+    color: #a50000; /* Color for the link */
+    position: relative; /* Allows pseudo-element positioning */
+}
+
+h2 a::after {
+    content: ''; /* Create a custom underline */
+    position: absolute;
+    left: 0;
+    bottom: -3px; /* Adjust the position below the text */
+    width: 0;
+    height: 2px;
+    background-color: #a50000; /* Same color as the text */
+    transition: width 0.5s ease-in-out; /* Smooth animation */
+}
+
+h2 a:hover::after {
+    width: 100%; /* Expand the underline on hover */
+}
